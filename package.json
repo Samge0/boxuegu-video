@@ -1,10 +1,10 @@
 {
   "name": "boxuegu-video-player",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "博学谷视频播放客户端 - 支持缓存、字幕提取、大模型解读",
   "main": "main.js",
   "author": {
-    "name": "Samge",
+    "name": "Samge0",
     "email": "samge@users.noreply.github.com"
   },
   "license": "MIT",

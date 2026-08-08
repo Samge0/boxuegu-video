@@ -497,7 +497,7 @@ function applySessionProxy() {
       proxyRules: proxy,
       proxyBypassRules: 'localhost,127.0.0.1'
     });
-    console.log('Whisper下载使用代理:', proxy);
+    console.log('系统代理已设置:', proxy);
     return proxy;
   }
   return null;
@@ -627,6 +627,9 @@ function createWindow() {
     minHeight: 600,
     title: '博学谷视频播放器',
     icon: path.join(__dirname, 'build', 'icon.png'),
+    backgroundColor: '#f5f5f7',
+    // Apple-style: hide the native menu bar, keep window controls
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -639,6 +642,8 @@ function createWindow() {
 
   mainWindow.loadFile('index.html');
   mainWindow.once('ready-to-show', () => mainWindow.show());
+  // Safety fallback: force show after 5s in case ready-to-show doesn't fire
+  setTimeout(() => { if (mainWindow && !mainWindow.isDestroyed()) mainWindow.show(); }, 5000);
 
   // Apply system proxy for whisper downloads (GitHub/HuggingFace)
   applySessionProxy();
@@ -665,6 +670,28 @@ app.on('window-all-closed', () => {
 
 // Get config
 ipcMain.handle('config:get', () => loadConfig());
+
+// App version
+ipcMain.handle('app:getVersion', () => app.getVersion());
+
+// Open URL in system default browser
+ipcMain.handle('app:openExternal', (e, url) => {
+  const { shell } = require('electron');
+  shell.openExternal(url);
+});
+
+// Check latest GitHub release tag
+ipcMain.handle('app:checkUpdate', async () => {
+  try {
+    const resp = await fetchJsonWithProxy('https://api.github.com/repos/Samge0/boxuegu-video/releases/latest');
+    if (resp && resp.tag_name) {
+      return { latest: resp.tag_name, success: true };
+    }
+    return { success: false };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
 ipcMain.handle('config:save', (e, cfg) => {
   const current = loadConfig();
   const merged = { ...current, ...cfg };
@@ -1268,10 +1295,45 @@ ipcMain.handle('file:read', (e, filePath) => {
   }
 });
 
+// ===== AI Chat History (per-video, persisted as JSON) =====
+function getAIHistoryDir() {
+  const dir = path.join(APP_DATA_DIR, 'ai-history');
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+function getAIHistoryPath(videoId) {
+  return path.join(getAIHistoryDir(), `${videoId}.json`);
+}
+
+// Read AI chat history for a video
+ipcMain.handle('ai-history:read', (e, videoId) => {
+  try {
+    const p = getAIHistoryPath(videoId);
+    if (!fs.existsSync(p)) return [];
+    const raw = fs.readFileSync(p, 'utf-8');
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+});
+
+// Write AI chat history for a video (full overwrite)
+ipcMain.handle('ai-history:write', (e, videoId, messages) => {
+  try {
+    const p = getAIHistoryPath(videoId);
+    fs.writeFileSync(p, JSON.stringify(messages, null, 2), 'utf-8');
+    return true;
+  } catch (err) {
+    console.error('AI history write error:', err);
+    return false;
+  }
+});
+
 // Register local-video:// protocol handler for playing cached video files
 // URL format: local-video://load/<base64-encoded-path>
+// Must support HTTP Range requests so <video> can seek.
 app.whenReady().then(() => {
-  const { net } = require('electron');
   electronProtocol.handle('local-video', (request) => {
     try {
       // Extract base64 path after the host
@@ -1279,9 +1341,35 @@ app.whenReady().then(() => {
       const encoded = urlObj.pathname.replace(/^\//, '');
       // Decode base64 → original file path
       const filePath = Buffer.from(encoded, 'base64url').toString('utf-8');
-      // Convert Windows path to file:// URL
-      const fileUrl = 'file:///' + filePath.replace(/\\/g, '/').replace(/^\//, '');
-      return net.fetch(fileUrl);
+
+      // Read file stats for Content-Length + Range support
+      const stat = fs.statSync(filePath);
+      const fileSize = stat.size;
+      const rangeHeader = request.headers.get('range');
+
+      // Build headers that enable seeking
+      const headers = {
+        'Accept-Ranges': 'bytes',
+        'Content-Type': 'video/mp4',
+        'Cache-Control': 'no-cache',
+      };
+
+      if (rangeHeader) {
+        // Parse "bytes=start-end"
+        const parts = rangeHeader.replace(/bytes=/, '').split('-');
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        const chunkSize = end - start + 1;
+        headers['Content-Range'] = `bytes ${start}-${end}/${fileSize}`;
+        headers['Content-Length'] = String(chunkSize);
+        const stream = fs.createReadStream(filePath, { start, end });
+        return new Response(stream, { status: 206, headers });
+      } else {
+        // Full file (no range) — 200
+        headers['Content-Length'] = String(fileSize);
+        const stream = fs.createReadStream(filePath);
+        return new Response(stream, { status: 200, headers });
+      }
     } catch (err) {
       console.error('local-video protocol error:', err);
       return new Response('Error: ' + err.message, { status: 500 });

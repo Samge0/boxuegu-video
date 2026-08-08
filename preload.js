@@ -5,6 +5,11 @@ contextBridge.exposeInMainWorld('api', {
   getConfig: () => ipcRenderer.invoke('config:get'),
   saveConfig: (cfg) => ipcRenderer.invoke('config:save', cfg),
 
+  // App info
+  getVersion: () => ipcRenderer.invoke('app:getVersion'),
+  checkUpdate: () => ipcRenderer.invoke('app:checkUpdate'),
+  openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
+
   // API
   getVideoList: () => ipcRenderer.invoke('api:getVideoList'),
   getPlayAuth: (videoId) => ipcRenderer.invoke('api:getPlayAuth', videoId),
@@ -34,6 +39,10 @@ contextBridge.exposeInMainWorld('api', {
 
   // File
   readFile: (filePath) => ipcRenderer.invoke('file:read', filePath),
+
+  // AI Chat History (per-video)
+  readAIHistory: (videoId) => ipcRenderer.invoke('ai-history:read', videoId),
+  writeAIHistory: (videoId, messages) => ipcRenderer.invoke('ai-history:write', videoId, messages),
 
   // Events
   onCacheProgress: (callback) => {
