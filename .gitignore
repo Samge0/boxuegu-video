@@ -1,0 +1,39 @@
+# ===== Node.js 依赖 =====
+node_modules/
+
+# ===== 日志 =====
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== Python（whisper 字幕提取虚拟环境）=====
+.whisper-venv/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ===== 运行时生成目录（勿入库）=====
+bin/            # 自动下载的 whisper 工具（whisper.cpp + 模型 + DLL）
+cache/          # 视频缓存
+
+# ===== 打包构建产物（electron-builder 默认输出到 dist/）=====
+dist/
+release/
+*.js.orig
+
+# ===== 操作系统 =====
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ===== IDE / 编辑器 =====
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===== 环境变量 / 密钥 =====
+.env
+.env.local
