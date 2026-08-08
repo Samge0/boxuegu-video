@@ -131,6 +131,17 @@ boxuegu-video/
 └── build/               # 应用图标
 ```
 
+## 相关截图
+- 支持`暗黑模式/亮色模式`切换
+<img width="1870" height="1038" alt="image" src="https://github.com/user-attachments/assets/3a350f78-84a4-4498-af4a-c09506b3d08e" />
+<img width="1266" height="788" alt="image" src="https://github.com/user-attachments/assets/1f7490db-bad9-4865-b681-7c848152953d" />
+
+- AI解读
+<img width="1874" height="1038" alt="image" src="https://github.com/user-attachments/assets/d09335e4-84dc-4858-ba7f-a77d52b05864" />
+
+- 点击字幕可跳转到指定播放进度
+<img width="1869" height="1038" alt="image" src="https://github.com/user-attachments/assets/06486416-954e-492f-a7f5-8179f2e63c63" />
+
 ## 📄 License
 
 [MIT](LICENSE) © Samge0
