@@ -84,32 +84,46 @@ async function init() {
   const display = document.getElementById('speed-display');
   if (display) display.textContent = savedSpeed.toFixed(1) + 'x';
 
-  // Restore last video position
-  if (config.lastVideoId && config.lastPosition > 0) {
-    // Find the video in flatVideos
-    const lastVideo = flatVideos.find(v => v.videoId === config.lastVideoId);
+  // Restore last video position (ONLY for cached playback — online URLs don't support seek)
+  const savedVideoId = config.lastVideoId;
+  const savedPosition = config.lastPosition || 0;
+  if (savedVideoId && savedPosition > 0) {
+    const lastVideo = flatVideos.find(v => v.videoId === savedVideoId);
     if (lastVideo) {
       const module = videoList.find(m => m.moduleId === lastVideo.moduleId);
       const node = module?.nodeList?.find(n => n.nodeId === lastVideo.nodeId);
       if (module && node) {
-        // Play and seek to saved position
         showToast('恢复上次播放: ' + lastVideo.videoName, '');
-        playVideo(lastVideo, module, node).then(() => {
-          // Seek after video loads
-          const seekToPos = () => {
-            if (videoPlayer.duration && config.lastPosition < videoPlayer.duration - 2) {
-              videoPlayer.currentTime = config.lastPosition;
+
+        // Suppress timeupdate saves until seek completes (or determines it can't)
+        window._pendingSeek = savedPosition;
+
+        // Play the video
+        const playMode = await playVideo(lastVideo, module, node);
+
+        if (playMode === 'cache') {
+          // Cached playback supports seek — poll until duration available then seek
+          let seekAttempts = 0;
+          const seekPoll = setInterval(() => {
+            seekAttempts++;
+            if (videoPlayer.duration && savedPosition < videoPlayer.duration - 2) {
+              videoPlayer.currentTime = savedPosition;
+              setTimeout(() => {
+                if (Math.abs(videoPlayer.currentTime - savedPosition) < 5) {
+                  clearInterval(seekPoll);
+                  window._pendingSeek = null;
+                }
+              }, 200);
             }
-            videoPlayer.removeEventListener('loadedmetadata', seekToPos);
-          };
-          videoPlayer.addEventListener('loadedmetadata', seekToPos);
-          // Also try immediately in case already loaded
-          setTimeout(() => {
-            if (videoPlayer.duration && config.lastPosition < videoPlayer.duration - 2) {
-              videoPlayer.currentTime = config.lastPosition;
+            if (seekAttempts > 20) {
+              clearInterval(seekPoll);
+              window._pendingSeek = null;
             }
-          }, 1000);
-        });
+          }, 500);
+        } else {
+          // Online playback — no seek (remote URL doesn't support it)
+          window._pendingSeek = null;
+        }
       }
     }
   }
@@ -266,6 +280,7 @@ function renderTree(filter = '') {
 let preferCache = true;  // true = play from cache when available; false = always online
 
 // ===== Play Video =====
+// Returns 'cache' | 'online' | null indicating how the video was played
 async function playVideo(video, module, node) {
   // Record progress for the previous video before switching
   if (currentVideo && videoPlayer.duration && videoPlayer.currentTime > 0) {
@@ -274,8 +289,8 @@ async function playVideo(video, module, node) {
 
   currentVideo = { ...video, moduleId: module.moduleId, nodeId: node.nodeId, moduleName: module.moduleName, nodeName: node.nodeName };
 
-  // Save this as the last played video
-  window.api.saveConfig({ lastVideoId: video.videoId, lastPosition: 0 });
+  // Save this as the last played video (position will be updated by timeupdate)
+  window.api.saveConfig({ lastVideoId: video.videoId });
 
   // Update active state in tree
   document.querySelectorAll('.video-item.active').forEach(el => el.classList.remove('active'));
@@ -302,12 +317,13 @@ async function playVideo(video, module, node) {
       if (cacheCheck.subtitle) {
         await loadSubtitleFromFile(cacheCheck.subtitle);
       }
-      return;
+      return 'cache';
     }
   }
 
   // Online playback (also used as fallback when cache not available)
   await playOnline(video);
+  return 'online';
 }
 
 async function playLocalFile(filePath, video) {
