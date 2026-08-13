@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>博学谷视频播放器 — 告别卡顿，专注学习</title>
+    <!-- 浏览器 tab 图标：内联 SVG 视频播放器，蓝紫渐变 -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%236366f1'/%3E%3Cstop offset='1' stop-color='%234338ca'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Cpath d='M24 20.5c0-1 .9-1.7 1.8-1.1l16 11.5c.8.5.8 1.7 0 2.2l-16 11.5c-.9.6-1.8-.1-1.8-1.1V20.5z' fill='white'/%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            200: '#c7d2fe',
+                            300: '#a5b4fc',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            800: '#3730a3',
+                            900: '#312e81',
+                        },
+                        accent: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        },
+                        neutral: {
+                            50: '#fafafa',
+                            100: '#f5f5f5',
+                            200: '#e5e5e5',
+                            300: '#d4d4d4',
+                            400: '#a3a3a3',
+                            500: '#737373',
+                            600: '#525252',
+                            700: '#404040',
+                            800: '#262626',
+                            900: '#171717',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Inter"', '"Noto Sans SC"', 'system-ui', 'sans-serif'],
+                        serif: ['"Manrope"', '"Noto Serif SC"', 'Georgia', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .glass-card-dark {
+            background: rgba(23, 23, 23, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+        .animate-delay-100 { animation-delay: 0.1s; opacity: 0; }
+        .animate-delay-200 { animation-delay: 0.2s; opacity: 0; }
+        .animate-delay-300 { animation-delay: 0.3s; opacity: 0; }
+        .animate-delay-400 { animation-delay: 0.4s; opacity: 0; }
+        .animate-delay-500 { animation-delay: 0.5s; opacity: 0; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-neutral-50 via-primary-50 to-neutral-100 min-h-screen text-neutral-800">
+    
+    <!-- Top Nav -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-card">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <span class="font-semibold text-lg text-neutral-800">博学谷播放器</span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-neutral-600 hover:text-primary-600 transition-colors text-sm font-medium">功能特性</a>
+                    <a href="#how-it-works" class="text-neutral-600 hover:text-primary-600 transition-colors text-sm font-medium">使用方式</a>
+                    <a href="#comparison" class="text-neutral-600 hover:text-primary-600 transition-colors text-sm font-medium">优势对比</a>
+                    <a href="#faq" class="text-neutral-600 hover:text-primary-600 transition-colors text-sm font-medium">常见问题</a>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <a href="https://github.com/Samge0/boxuegu-video" class="text-neutral-600 hover:text-primary-600 transition-colors text-sm font-medium hidden sm:block">GitHub</a>
+                    <a href="https://github.com/Samge0/boxuegu-video/releases" class="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-lg hover:shadow-primary-500/30 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                        免费下载
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center max-w-4xl mx-auto">
+                <div class="inline-flex items-center px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-sm font-medium mb-6 animate-fade-in-up">
+                    <span class="w-2 h-2 bg-primary-500 rounded-full mr-2 animate-pulse"></span>
+                    开源免费 · MIT 协议 · 全平台支持
+                </div>
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-neutral-900 mb-6 leading-tight animate-fade-in-up animate-delay-100">
+                    告别网页卡顿<br>
+                    <span class="bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">专为高效学习打造</span>
+                </h1>
+                <p class="text-xl text-neutral-600 mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up animate-delay-200">
+                    基于 Electron 构建的博学谷视频播放客户端。支持自动连播、0.1x ~ 5.0x 精细倍速、一键缓存全部课程，内置 AI 解读与字幕提取。
+                </p>
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animate-delay-300">
+                    <a href="https://github.com/Samge0/boxuegu-video/releases" class="w-full sm:w-auto px-8 py-4 bg-primary-600 hover:bg-primary-700 text-white rounded-xl font-medium text-lg transition-all hover:shadow-xl hover:shadow-primary-500/30 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        免费下载安装包
+                    </a>
+                    <a href="https://github.com/Samge0/boxuegu-video" class="w-full sm:w-auto px-8 py-4 bg-white hover:bg-neutral-50 text-neutral-700 rounded-xl font-medium text-lg transition-all border border-neutral-200 hover:border-neutral-300 focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        查看源代码
+                    </a>
+                </div>
+            </div>
+
+            <!-- Hero Visual -->
+            <div class="mt-16 relative">
+                <div class="absolute inset-0 bg-gradient-to-r from-primary-200 to-primary-100 rounded-3xl blur-3xl opacity-30"></div>
+                <div class="relative bg-white rounded-2xl shadow-2xl shadow-neutral-200/50 overflow-hidden border border-neutral-100">
+                    <div class="flex h-96">
+                        <!-- Left Sidebar -->
+                        <div class="w-72 bg-neutral-900 p-4 hidden md:block">
+                            <div class="text-white font-medium mb-3 text-sm">课程列表</div>
+                            <div class="space-y-2">
+                                <div class="bg-primary-600 text-white px-3 py-2 rounded text-sm">📁 模块 1</div>
+                                <div class="pl-4 space-y-1">
+                                    <div class="text-neutral-400 text-sm hover:text-white cursor-pointer px-2 py-1">📖 章节 1.1</div>
+                                    <div class="text-neutral-400 text-sm hover:text-white cursor-pointer px-2 py-1">📖 章节 1.2</div>
+                                    <div class="text-neutral-400 text-sm hover:text-white cursor-pointer px-2 py-1">📖 章节 1.3</div>
+                                </div>
+                                <div class="bg-neutral-800 text-neutral-400 px-3 py-2 rounded text-sm">📁 模块 2</div>
+                            </div>
+                        </div>
+                        <!-- Main Player -->
+                        <div class="flex-1 bg-neutral-800 flex items-center justify-center relative">
+                            <div class="absolute top-4 left-4 text-white text-sm font-medium">2.5x 倍速播放中</div>
+                            <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-sm">
+                                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                            </div>
+                            <div class="absolute bottom-4 left-4 right-4">
+                                <div class="w-full h-1 bg-neutral-700 rounded-full overflow-hidden">
+                                    <div class="w-3/5 h-full bg-primary-500"></div>
+                                </div>
+                                <div class="flex justify-between text-neutral-400 text-xs mt-1">
+                                    <span>12:34</span>
+                                    <span>25:00</span>
+                                </div>
+                            </div>
+                            <!-- AI Panel Preview -->
+                            <div class="absolute top-4 right-4 w-48 bg-white/10 backdrop-blur-md rounded-lg p-3 border border-white/20">
+                                <div class="flex items-center mb-2">
+                                    <div class="w-6 h-6 bg-accent-500 rounded-full flex items-center justify-center text-white text-xs mr-2">AI</div>
+                                    <span class="text-white text-xs font-medium">智能解读</span>
+                                </div>
+                                <div class="text-neutral-300 text-xs space-y-1">
+                                    <div class="w-full h-2 bg-white/20 rounded animate-pulse"></div>
+                                    <div class="w-3/4 h-2 bg-white/20 rounded animate-pulse"></div>
+                                    <div class="w-1/2 h-2 bg-white/20 rounded animate-pulse"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pain Points Section -->
+    <section class="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-neutral-50 to-white">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-neutral-900 mb-4">你是否也遇到过这些痛点？</h2>
+                <p class="text-neutral-600 text-lg">在浏览器看博学谷视频时，这些烦恼是否让你学习效率大打折扣？</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 痛点卡片：暖红渐变背景 + 可见边框 + 图标 + 描述 -->
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-red-50 to-orange-50 border border-red-200/60 shadow-sm hover:shadow-lg hover:border-red-300 hover:-translate-y-1 transition-all duration-300">
+                    <div class="w-11 h-11 bg-gradient-to-br from-red-500 to-rose-500 rounded-xl flex items-center justify-center mb-4 shadow-sm shadow-red-500/30">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </div>
+                    <p class="text-neutral-700 font-medium leading-relaxed">每次播放都跳转到独立浏览器页面，频繁切换中断心流</p>
+                </div>
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-red-50 to-orange-50 border border-red-200/60 shadow-sm hover:shadow-lg hover:border-red-300 hover:-translate-y-1 transition-all duration-300">
+                    <div class="w-11 h-11 bg-gradient-to-br from-red-500 to-rose-500 rounded-xl flex items-center justify-center mb-4 shadow-sm shadow-red-500/30">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </div>
+                    <p class="text-neutral-700 font-medium leading-relaxed">无法自动播放，每节课都要手动点击</p>
+                </div>
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-red-50 to-orange-50 border border-red-200/60 shadow-sm hover:shadow-lg hover:border-red-300 hover:-translate-y-1 transition-all duration-300">
+                    <div class="w-11 h-11 bg-gradient-to-br from-red-500 to-rose-500 rounded-xl flex items-center justify-center mb-4 shadow-sm shadow-red-500/30">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </div>
+                    <p class="text-neutral-700 font-medium leading-relaxed">无法锁定倍速，每次刷新都回到 1.0x</p>
+                </div>
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-red-50 to-orange-50 border border-red-200/60 shadow-sm hover:shadow-lg hover:border-red-300 hover:-translate-y-1 transition-all duration-300">
+                    <div class="w-11 h-11 bg-gradient-to-br from-red-500 to-rose-500 rounded-xl flex items-center justify-center mb-4 shadow-sm shadow-red-500/30">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </div>
+                    <p class="text-neutral-700 font-medium leading-relaxed">官方客户端仅面向已付费会员，普通用户被拒之门外</p>
+                </div>
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-red-50 to-orange-50 border border-red-200/60 shadow-sm hover:shadow-lg hover:border-red-300 hover:-translate-y-1 transition-all duration-300">
+                    <div class="w-11 h-11 bg-gradient-to-br from-red-500 to-rose-500 rounded-xl flex items-center justify-center mb-4 shadow-sm shadow-red-500/30">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </div>
+                    <p class="text-neutral-700 font-medium leading-relaxed">网页播放卡顿、缓冲慢，学习效率大打折扣</p>
+                </div>
+                <!-- 解决方案卡片：绿色 accent 渐变高亮 -->
+                <div class="p-6 rounded-2xl bg-gradient-to-br from-accent-500 to-accent-600 text-white border-0 shadow-lg shadow-accent-500/30 hover:-translate-y-1 transition-all duration-300">
+                    <div class="w-11 h-11 bg-white/25 backdrop-blur-sm rounded-xl flex items-center justify-center mb-4">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <p class="font-medium leading-relaxed">博学谷播放器帮你解决所有问题，让学习回到高效状态</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-neutral-50 to-white">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-neutral-900 mb-4">功能特性</h2>
+                <p class="text-neutral-600 text-lg max-w-2xl mx-auto">从播放体验到 AI 辅助，全方位提升你的学习效率</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8 mb-16">
+                <!-- 极速播放体验 -->
+                <div class="glass-card rounded-2xl p-8 hover:shadow-xl transition-shadow">
+                    <div class="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-neutral-900 mb-4">🎬 极速播放体验</h3>
+                    <ul class="space-y-3 text-neutral-600">
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>自动加载播放列表，树形展示一目了然</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>0.1x ~ 5.0x 倍速，0.1 步进精细调节</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>自动连播 + 进度记忆，倍速自动保存</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>一键缓存全部课程，本地播放零等待</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>缓存/线上无缝切换，自动保持播放进度</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 智能字幕 -->
+                <div class="glass-card rounded-2xl p-8 hover:shadow-xl transition-shadow">
+                    <div class="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-neutral-900 mb-4">💬 智能字幕</h3>
+                    <ul class="space-y-3 text-neutral-600">
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>字幕提取：ffmpeg + whisper 自动安装</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>字幕浮层：开关控制，样式低调不遮挡</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>字幕侧栏：完整列表，点击时间戳跳转</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>批量提取：一键处理所有缓存视频（GPU 加速）</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- AI 深度解读 -->
+                <div class="glass-card rounded-2xl p-8 hover:shadow-xl transition-shadow">
+                    <div class="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-neutral-900 mb-4">🤖 AI 深度解读</h3>
+                    <ul class="space-y-3 text-neutral-600">
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>流式输出：实时渲染，支持 Markdown / 表格 / 公式</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>对话记忆：每个视频独立保存，支持多轮追问</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>10 个快捷提问：总结、解释、Demo、面试题等</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>追问推荐：每次回复后自动提供新提问</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>通用兼容：支持 OpenAI 格式 API（可配置）</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 精致界面 -->
+                <div class="glass-card rounded-2xl p-8 hover:shadow-xl transition-shadow">
+                    <div class="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-6">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-semibold text-neutral-900 mb-4">🎨 精致界面</h3>
+                    <ul class="space-y-3 text-neutral-600">
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Apple 设计语言：优雅克制，参考官方规范</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>亮色 / 暗黑主题：一键切换，自动记忆偏好</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>毛玻璃顶栏：backdrop-filter + pill 按钮设计</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>无菜单栏：隐藏传统菜单栏，简洁沉浸</span>
+                        </li>
+                        <li class="flex items-start">
+                            <svg class="w-5 h-5 text-accent-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>版本检测：自动检查更新，有更新时红点提醒</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-20 px-4 sm:px-6 lg:px-8 bg-neutral-900 text-white">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold mb-4">三步快速上手</h2>
+                <p class="text-neutral-400 text-lg">只需几分钟，即可享受高效学习体验</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="relative">
+                    <div class="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center mb-6 text-2xl font-bold">1</div>
+                    <h3 class="text-xl font-semibold mb-3">克隆运行</h3>
+                    <p class="text-neutral-400 leading-relaxed">
+                        <code class="bg-neutral-800 px-2 py-1 rounded text-sm">git clone</code> + <code class="bg-neutral-800 px-2 py-1 rounded text-sm">npm install</code> + <code class="bg-neutral-800 px-2 py-1 rounded text-sm">npm start</code><br>
+                        或直接下载 Releases 安装包
+                    </p>
+                    <div class="hidden md:block absolute top-8 right-0 w-1/2 h-0.5 bg-gradient-to-r from-primary-500 to-transparent"></div>
+                </div>
+                <div class="relative">
+                    <div class="w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl flex items-center justify-center mb-6 text-2xl font-bold">2</div>
+                    <h3 class="text-xl font-semibold mb-3">设置 Cookie</h3>
+                    <p class="text-neutral-400 leading-relaxed">
+                        打开应用 → 设置 → 粘贴浏览器登录 <code class="bg-neutral-800 px-2 py-1 rounded text-sm">tsp.boxuegu.com</code> 后的 Cookie
+                    </p>
+                    <div class="hidden md:block absolute top-8 right-0 w-1/2 h-0.5 bg-gradient-to-r from-primary-500 to-transparent"></div>
+                </div>
+                <div>
+                    <div class="w-16 h-16 bg-gradient-to-br from-accent-500 to-accent-600 rounded-2xl flex items-center justify-center mb-6 text-2xl font-bold">3</div>
+                    <h3 class="text-xl font-semibold mb-3">开始学习</h3>
+                    <p class="text-neutral-400 leading-relaxed">
+                        选择课程，享受自动连播、倍速、缓存、AI 解读带来的高效体验
+                    </p>
+                </div>
+            </div>
+            <div class="mt-12 p-6 bg-neutral-800 rounded-xl border border-neutral-700">
+                <p class="text-neutral-300 text-center">
+                    <span class="text-accent-400 font-medium">💡 可选：</span>
+                    配置大模型 API（OpenAI 格式）开启 AI 解读；一键下载 whisper（约 75MB）开启字幕提取。
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section id="comparison" class="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-neutral-50 to-white">
+        <div class="max-w-5xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-neutral-900 mb-4">为什么选择博学谷播放器</h2>
+                <p class="text-neutral-600 text-lg">与其他播放方式对比，优势一目了然</p>
+            </div>
+            <div class="overflow-x-auto rounded-2xl shadow-lg shadow-neutral-200/60 border border-neutral-200">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b-2 border-neutral-200 bg-neutral-100">
+                            <th class="py-4 px-6 text-left text-neutral-700 font-semibold">特性</th>
+                            <th class="py-4 px-6 text-center text-neutral-700 font-semibold">网页播放</th>
+                            <th class="py-4 px-6 text-center text-neutral-700 font-semibold">官方客户端</th>
+                            <th class="py-4 px-6 text-center text-white font-semibold bg-gradient-to-b from-primary-500 to-primary-700">博学谷播放器</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-neutral-200 even:bg-neutral-50/50">
+                            <td class="py-4 px-6 text-neutral-700">自动连播</td>
+                            <td class="py-4 px-6 text-center">
+                                <svg class="w-5 h-5 text-red-400 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                            <td class="py-4 px-6 text-center">
+                                <svg class="w-5 h-5 text-accent-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                            <td class="py-4 px-6 text-center bg-primary-50/80">
+                                <svg class="w-5 h-5 text-accent-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                        </tr>
+                        <tr class="border-b border-neutral-200 even:bg-neutral-50/50">
+                            <td class="py-4 px-6 text-neutral-700">任意倍速（0.1x 步进）</td>
+                            <td class="py-4 px-6 text-center">
+                                <svg class="w-5 h-5 text-red-400 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                            <td class="py-4 px-6 text-center text-neutral-500 text-sm">有限</td>
+                            <td class="py-4 px-6 text-center bg-primary-50/80">
+                                <svg class="w-5 h-5 text-accent-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                        </tr>
+                        <tr class="border-b border-neutral-200 even:bg-neutral-50/50">
+                            <td class="py-4 px-6 text-neutral-700">离线缓存全部</td>
+                            <td class="py-4 px-6 text-center">
+                                <svg class="w-5 h-5 text-red-400 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                            <td class="py-4 px-6 text-center">
+                                <svg class="w-5 h-5 text-red-400 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                            <td class="py-4 px-6 text-center bg-primary-50/80">
+                                <svg class="w-5 h-5 text-accent-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                        </tr>
+                        <tr class="border-b border-neutral-200 even:bg-neutral-50/50">
+                            <td class="py-4 px-6 text-neutral-700">AI 解读</td>
+                            <td class="py-4 px-6 text-center">
+                                <svg class="w-5 h-5 text-red-400 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                            <td class="py-4 px-6 text-center">
+                                <svg class="w-5 h-5 text-red-400 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                            <td class="py-4 px-6 text-center bg-primary-50/80">
+                                <svg class="w-5 h-5 text-accent-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                        </tr>
+                        <tr class="border-b border-neutral-200 even:bg-neutral-50/50">
+                            <td class="py-4 px-6 text-neutral-700">字幕提取</td>
+                            <td class="py-4 px-6 text-center">
+                                <svg class="w-5 h-5 text-red-400 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                            <td class="py-4 px-6 text-center">
+                                <svg class="w-5 h-5 text-red-400 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                            <td class="py-4 px-6 text-center bg-primary-50/80">
+                                <svg class="w-5 h-5 text-accent-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                            </td>
+                        </tr>
+                        <tr class="border-b border-neutral-200 even:bg-neutral-50/50">
+                            <td class="py-4 px-6 text-neutral-700">会员限制</td>
+                            <td class="py-4 px-6 text-center text-neutral-500 text-sm">—</td>
+                            <td class="py-4 px-6 text-center text-neutral-500 text-sm">需会员</td>
+                            <td class="py-4 px-6 text-center bg-primary-50/80 text-accent-600 font-medium">无</td>
+                        </tr>
+                        <tr>
+                            <td class="py-4 px-6 text-neutral-700">开源免费</td>
+                            <td class="py-4 px-6 text-center text-neutral-500 text-sm">—</td>
+                            <td class="py-4 px-6 text-center text-neutral-500 text-sm">—</td>
+                            <td class="py-4 px-6 text-center bg-primary-50/80 text-accent-600 font-medium">MIT 协议</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tech Stack Section -->
+    <section class="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-neutral-50">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-neutral-900 mb-4">技术架构</h2>
+                <p class="text-neutral-600 text-lg">基于 Electron 构建，核心亮点</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="p-6 rounded-2xl bg-white border border-neutral-200 shadow-md shadow-neutral-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-4 shadow-sm shadow-primary-500/30">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-neutral-900 mb-2">视频播放</h3>
+                    <p class="text-sm text-neutral-600">Aliyun VOD playauth → STS 凭证 → Signature V1 签名 → MP4 地址 → HTML5 video</p>
+                </div>
+                <div class="p-6 rounded-2xl bg-white border border-neutral-200 shadow-md shadow-neutral-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-4 shadow-sm shadow-primary-500/30">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-neutral-900 mb-2">本地缓存</h3>
+                    <p class="text-sm text-neutral-600">local-video:// 协议 + HTTP Range (206) 支持，自由拖拽进度条</p>
+                </div>
+                <div class="p-6 rounded-2xl bg-white border border-neutral-200 shadow-md shadow-neutral-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-4 shadow-sm shadow-primary-500/30">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-neutral-900 mb-2">字幕提取</h3>
+                    <p class="text-sm text-neutral-600">ffmpeg 提取音频 → faster-whisper (GPU) / whisper.cpp → SRT/VTT 字幕</p>
+                </div>
+                <div class="p-6 rounded-2xl bg-white border border-neutral-200 shadow-md shadow-neutral-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-700 rounded-xl flex items-center justify-center mb-4 shadow-sm shadow-primary-500/30">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-neutral-900 mb-2">安全架构</h3>
+                    <p class="text-sm text-neutral-600">contextBridge 安全预加载 + 主进程统一 IPC 代理</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section class="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-primary-600 to-primary-800 text-white">
+        <div class="max-w-7xl mx-auto text-center">
+            <h2 class="text-3xl font-bold mb-6">立即下载安装</h2>
+            <p class="text-xl text-primary-100 mb-10 max-w-2xl mx-auto">
+                选择适合你的平台，免费享受高效学习体验
+            </p>
+            <div class="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                <a href="https://github.com/Samge0/boxuegu-video/releases" class="group p-6 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold mb-1">Windows</h3>
+                    <p class="text-sm text-primary-100">NSIS 安装包</p>
+                    <span class="inline-block mt-3 text-sm text-white group-hover:translate-x-1 transition-transform">下载 →</span>
+                </a>
+                <a href="https://github.com/Samge0/boxuegu-video/releases" class="group p-6 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold mb-1">macOS</h3>
+                    <p class="text-sm text-primary-100">dmg 安装包</p>
+                    <span class="inline-block mt-3 text-sm text-white group-hover:translate-x-1 transition-transform">下载 →</span>
+                </a>
+                <a href="https://github.com/Samge0/boxuegu-video/releases" class="group p-6 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/20 transition-all">
+                    <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12.504 0c-.155 0-.315.008-.48.021-4.226.333-3.105 4.807-3.17 6.298-.076 1.092-.3 1.953-1.05 3.02-.885 1.051-2.127 2.75-2.716 4.521-.27.781-.423 1.612-.424 2.475 0 2.698 2.054 4.972 4.802 5.51C10.312 23.913 11.396 24 12.504 24c1.107 0 2.192-.087 2.534-2.155 2.748-.538 4.802-2.812 4.802-5.51 0-.864-.155-1.694-.424-2.475-.589-1.771-1.831-3.47-2.716-4.521-.75-1.067-.974-1.928-1.05-3.02-.065-1.491 1.056-5.965-3.17-6.298-.164-.013-.324-.021-.479-.021zm-.536 1.975c.084-.007.165-.004.243.008 1.03.166 1.05 1.27 1.05 2.083v5.133c0 .82.098 1.465.634 1.85.536.384 1.383.384 1.383.384s-.85.683-2.21.683c-1.359 0-2.21-.683-2.21-.683s.847 0 1.383-.384c.536-.385.634-1.03.634-1.85V4.066c0-.813.02-1.917 1.05-2.083.078-.012.159-.015.243-.008zm.003 9.527c.49 0 .962.042 1.396.124.434.082.827.204 1.172.369.345.165.625.37.832.617.207.247.31.535.31.87v.035c0 .338-.103.628-.31.875-.207.247-.487.452-.832.617-.345.165-.738.287-1.172.369-.434.082-.906.124-1.396.124-.49 0-.962-.042-1.396-.124-.434-.082-.827-.204-1.172-.369-.345-.165-.625-.37-.832-.617-.207-.247-.31-.537-.31-.875v-.035c0-.335.103-.623.31-.87.207-.247.487-.452.832-.617.345-.165.738-.287 1.172-.369.434-.082.906-.124 1.396-.124z"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold mb-1">Linux</h3>
+                    <p class="text-sm text-primary-100">AppImage / deb</p>
+                    <span class="inline-block mt-3 text-sm text-white group-hover:translate-x-1 transition-transform">下载 →</span>
+                </a>
+            </div>
+            <div class="mt-10 p-6 bg-white/5 rounded-xl border border-white/10 max-w-2xl mx-auto">
+                <p class="text-primary-100 text-sm mb-4">开发模式运行：</p>
+                <div class="bg-black/20 rounded-lg p-4 text-left">
+                    <code class="text-sm text-primary-200">git clone https://github.com/Samge0/boxuegu-video.git</code><br>
+                    <code class="text-sm text-primary-200">cd boxuegu-video && npm install && npm start</code>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl font-bold text-neutral-900 mb-4">常见问题</h2>
+                <p class="text-neutral-600 text-lg">快速解答你可能关心的问题</p>
+            </div>
+            <div class="space-y-4">
+                <details class="group">
+                    <summary class="flex items-center justify-between p-6 bg-neutral-50 rounded-xl cursor-pointer hover:bg-neutral-100 transition-colors">
+                        <span class="font-medium text-neutral-900">需要会员吗？</span>
+                        <svg class="w-5 h-5 text-neutral-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </summary>
+                    <div class="p-6 text-neutral-600">
+                        不需要。只需你有博学谷账号能正常登录获取 Cookie 即可使用全部功能。
+                    </div>
+                </details>
+                <details class="group">
+                    <summary class="flex items-center justify-between p-6 bg-neutral-50 rounded-xl cursor-pointer hover:bg-neutral-100 transition-colors">
+                        <span class="font-medium text-neutral-900">安全吗？</span>
+                        <svg class="w-5 h-5 text-neutral-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </summary>
+                    <div class="p-6 text-neutral-600">
+                        Cookie 仅存储在本地，所有请求通过本地代理转发，不经过任何第三方服务器。开源代码可审计。
+                    </div>
+                </details>
+                <details class="group">
+                    <summary class="flex items-center justify-between p-6 bg-neutral-50 rounded-xl cursor-pointer hover:bg-neutral-100 transition-colors">
+                        <span class="font-medium text-neutral-900">支持哪些平台？</span>
+                        <svg class="w-5 h-5 text-neutral-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </summary>
+                    <div class="p-6 text-neutral-600">
+                        Windows、macOS、Linux 全平台支持，提供对应安装包。
+                    </div>
+                </details>
+                <details class="group">
+                    <summary class="flex items-center justify-between p-6 bg-neutral-50 rounded-xl cursor-pointer hover:bg-neutral-100 transition-colors">
+                        <span class="font-medium text-neutral-900">AI 解读怎么用？</span>
+                        <svg class="w-5 h-5 text-neutral-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </summary>
+                    <div class="p-6 text-neutral-600">
+                        配置任意 OpenAI 格式 API（如 OpenAI、智谱、Moonshot 等），即可对视频内容多轮追问。
+                    </div>
+                </details>
+                <details class="group">
+                    <summary class="flex items-center justify-between p-6 bg-neutral-50 rounded-xl cursor-pointer hover:bg-neutral-100 transition-colors">
+                        <span class="font-medium text-neutral-900">字幕准确吗？</span>
+                        <svg class="w-5 h-5 text-neutral-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </summary>
+                    <div class="p-6 text-neutral-600">
+                        使用 faster-whisper / whisper.cpp 中文语音识别，对于清晰人声课程准确率较高。
+                    </div>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-neutral-900 text-neutral-400 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center justify-between">
+                <div class="flex items-center space-x-3 mb-6 md:mb-0">
+                    <div class="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="text-white font-semibold">博学谷视频播放器</div>
+                        <div class="text-sm">MIT License · 开源免费</div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <a href="https://github.com/Samge0/boxuegu-video" class="hover:text-white transition-colors flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                        GitHub
+                    </a>
+                    <a href="https://github.com/Samge0/boxuegu-video" class="hover:text-white transition-colors">
+                        作者：Samge0
+                    </a>
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-neutral-800 text-center text-sm">
+                <p>技术栈：Electron + HTML5 Video + faster-whisper + OpenAI API</p>
+                <p class="mt-2">欢迎 Star ⭐ 支持作者持续开发</p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
