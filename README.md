@@ -1,5 +1,7 @@
 # 博学谷视频播放器
 
+> 🌐 **[在线预览宣传页](https://samge0.github.io/boxuegu-video/)** · 📦 **[下载安装包](https://github.com/Samge0/boxuegu-video/releases)** · ⭐ **[给个 Star](https://github.com/Samge0/boxuegu-video)**
+
 基于 Electron 的[博学谷](https://tsp.boxuegu.com/#/Index)视频播放客户端。
 
 这两天在看`博学谷`的视频，但每次播放视频都跳到独立的浏览器页面播放，且无法自动播放、无法自动锁定倍速播放。博学谷本身也有客户端，但只面向已经付费的会员用户，于是使用 [hermes](https://github.com/NousResearch/hermes-agent) 分析并构建一个自定义播放工具，方便自己观看视频。
@@ -126,6 +128,7 @@ boxuegu-video/
 ├── index.html           # UI 页面 + CSS
 ├── renderer.js          # 渲染逻辑
 ├── vendor/              # 本地库（marked.js, KaTeX）
+├── docs/                # GitHub Pages 宣传落地页（index.html）
 ├── package.json         # 项目配置
 ├── LICENSE              # MIT 协议
 └── build/               # 应用图标
